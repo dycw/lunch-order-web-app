@@ -23,8 +23,8 @@
         <table class="min-w-full text-left text-sm font-light">
           <thead class="border-b font-medium dark:border-neutral-500">
             <tr>
-              <th scope="col" class="px-6 py-4">User</th>
               <th scope="col" class="px-6 py-4">Datetime</th>
+              <th scope="col" class="px-6 py-4">User</th>
               <th scope="col" class="px-6 py-4">Item</th>
               <th scope="col" class="px-6 py-4">Price ($)</th>
             </tr>
@@ -32,11 +32,11 @@
           <tbody>
             {% for order in orders %}
             <tr class="border-b dark:border-neutral-500">
+              <td class="whitespace-nowrap px-6 py-4">
+                {{ order.datetime|fmt_datetime}}
+              </td>
               <td class="whitespace-nowrap px-6 py-4 font-medium">
                 {{ order.user }}
-              </td>
-              <td class="whitespace-nowrap px-6 py-4">
-                {{ order.date|fmt_datetime}}
               </td>
               <td class="whitespace-nowrap px-6 py-4">
                 {{ order.description }}

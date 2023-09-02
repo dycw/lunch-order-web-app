@@ -6,13 +6,13 @@ from pydantic import BaseModel
 
 class OrderIn(BaseModel):
     name: str
-    date: dt.date
+    datetime: dt.datetime
     description: str
     price: Decimal
 
 
 class OrderOut(BaseModel):
     user: str
-    date: dt.date
+    datetime: dt.datetime
     description: str
     price: Decimal

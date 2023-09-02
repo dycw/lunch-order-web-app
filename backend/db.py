@@ -5,19 +5,17 @@ from contextlib import contextmanager
 from typing import Iterator
 
 from sqlalchemy import (
-    DECIMAL,
     Column,
     Connection,
-    Date,
     Engine,
     ForeignKey,
-    Integer,
     MetaData,
-    String,
     Table,
     create_engine,
+    func,
     select,
 )
+from sqlalchemy.dialects.sqlite import DATETIME, DECIMAL, INTEGER, VARCHAR
 from sqlalchemy.exc import NoResultFound
 
 from backend.models import OrderIn, OrderOut
@@ -28,17 +26,17 @@ METADATA = MetaData()
 Orders = Table(
     "orders",
     METADATA,
-    Column("id", Integer, autoincrement=True, primary_key=True),
-    Column("user_id", Integer, ForeignKey("users.id")),
-    Column("date", Date, nullable=False),
-    Column("description", String(255)),
-    Column("price", DECIMAL),
+    Column("id", INTEGER, autoincrement=True, primary_key=True),
+    Column("datetime", DATETIME, nullable=False, default=dt.datetime.now),
+    Column("user_id", INTEGER, ForeignKey("users.id")),
+    Column("description", VARCHAR(255), nullable=False),
+    Column("price", DECIMAL, nullable=False),
 )
 Users = Table(
     "users",
     METADATA,
-    Column("id", Integer, primary_key=True),
-    Column("name", String(255), unique=True),
+    Column("id", INTEGER, autoincrement=True, primary_key=True),
+    Column("name", VARCHAR(255), nullable=False, unique=True),
 )
 
 
@@ -57,7 +55,7 @@ def add_order_to_db(
         user_id = _get_user_id_from_db(order.name, engine_or_conn=conn)
         ins = Orders.insert().values(
             user_id=user_id,
-            date=order.date,
+            datetime=order.datetime,
             description=order.description,
             price=order.price,
         )
@@ -88,22 +86,33 @@ def _add_user_to_db(
 
 
 def get_orders_from_db(
-    *, date: dt.date | None = None, engine_or_conn: Engine | Connection = ENGINE
+    *,
+    date: dt.date | None = None,
+    datetime: dt.datetime | None = None,
+    engine_or_conn: Engine | Connection = ENGINE,
 ) -> list[OrderOut]:
     sel = (
         select(
-            Users.c.name, Orders.c.date, Orders.c.description, Orders.c.price
+            Orders.c.datetime,
+            Users.c.name,
+            Orders.c.description,
+            Orders.c.price,
         )
-        .select_from(Users)
-        .join(Orders)
+        .select_from(Orders)
+        .join(Users)
     )
     if date is not None:
-        sel = sel.where(Orders.c.date == date)
+        sel = sel.where(func.DATE(Orders.c.datetime) == date)
+    if datetime is not None:
+        sel = sel.where(Orders.c.datetime == datetime)
+    sel = sel.order_by(Orders.c.datetime.desc())
     with _yield_conn(engine_or_conn=engine_or_conn) as conn:
         rows = conn.execute(sel).all()
     return [
-        OrderOut(user=user, date=date, description=description, price=price)
-        for user, date, description, price in rows
+        OrderOut(
+            datetime=datetime, user=user, description=description, price=price
+        )
+        for datetime, user, description, price in rows
     ]
 
 

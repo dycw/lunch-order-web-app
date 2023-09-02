@@ -4,15 +4,17 @@ import datetime as dt
 from decimal import Decimal
 from getpass import getuser
 
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Form, Request, Response, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from backend.db import add_order_to_db, get_orders_from_db
-from backend.models import OrderIn, OrderOut
+from backend.models import OrderIn
+from backend.routes.api import router
 
 app = FastAPI()
+app.include_router(router=router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -37,22 +39,36 @@ templates.env.filters["fmt_price"] = _fmt_price
 @app.get("/", response_class=HTMLResponse)
 async def home(*, request: Request) -> Response:
     now = dt.datetime.now()
-    orders = await get_orders(date=now.date())
+    orders = get_orders_from_db(date=now.date())
     name = "index.html"
     context = {
         "request": request,
-        "username": getuser(),
         "now": now,
+        "username": getuser(),
         "orders": orders,
     }
     return templates.TemplateResponse(name=name, context=context)
 
 
-@app.post("/order")
-async def add_order(*, order: OrderIn) -> None:
+@app.get("/order")
+async def order_now(*, request: Request) -> Response:
+    name = "order.html"
+    context = {"request": request, "user": getuser()}
+    return templates.TemplateResponse(name=name, context=context)
+
+
+@app.post("/submit")
+async def submit(
+    *,
+    name: str = Form(...),
+    description: str = Form(...),
+    price: Decimal = Form(...),
+) -> RedirectResponse:
+    order = OrderIn(
+        name=name,
+        datetime=dt.datetime.now(),
+        description=description,
+        price=price,
+    )
     add_order_to_db(order)
-
-
-@app.get("/orders")
-async def get_orders(*, date: dt.date | None = None) -> list[OrderOut]:
-    return get_orders_from_db(date=date)
+    return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
