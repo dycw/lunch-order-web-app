@@ -3,19 +3,22 @@ from __future__ import annotations
 import datetime as dt
 from contextlib import contextmanager
 from typing import Iterator
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    DECIMAL,
     Column,
     Connection,
+    DateTime,
     Engine,
     ForeignKey,
     MetaData,
+    String,
     Table,
     create_engine,
     func,
     select,
 )
-from sqlalchemy.dialects.sqlite import DATETIME, DECIMAL, INTEGER, VARCHAR
 from sqlalchemy.exc import NoResultFound
 
 from backend.models import OrderIn, OrderOut
@@ -26,17 +29,17 @@ METADATA = MetaData()
 Orders = Table(
     "orders",
     METADATA,
-    Column("id", INTEGER, autoincrement=True, primary_key=True),
-    Column("datetime", DATETIME, nullable=False, default=dt.datetime.now),
-    Column("user_id", INTEGER, ForeignKey("users.id")),
-    Column("description", VARCHAR(255), nullable=False),
+    Column("id", String(36), primary_key=True),
+    Column("datetime", DateTime, nullable=False, default=dt.datetime.now),
+    Column("user_id", String(36), ForeignKey("users.id")),
+    Column("description", String(255), nullable=False),
     Column("price", DECIMAL, nullable=False),
 )
 Users = Table(
     "users",
     METADATA,
-    Column("id", INTEGER, autoincrement=True, primary_key=True),
-    Column("name", VARCHAR(255), nullable=False, unique=True),
+    Column("id", String(36), primary_key=True),
+    Column("name", String(255), nullable=False, unique=True),
 )
 
 
@@ -54,8 +57,9 @@ def add_order_to_db(
     with _yield_conn(engine_or_conn=engine_or_conn) as conn:
         user_id = _get_user_id_from_db(order.name, engine_or_conn=conn)
         ins = Orders.insert().values(
-            user_id=user_id,
+            id=str(uuid4()),
             datetime=order.datetime,
+            user_id=user_id,
             description=order.description,
             price=order.price,
         )
@@ -64,7 +68,7 @@ def add_order_to_db(
 
 def _get_user_id_from_db(
     name: str, /, *, engine_or_conn: Engine | Connection = ENGINE
-) -> int:
+) -> UUID:
     sel = Users.select().where(Users.c.name == name)
     with _yield_conn(engine_or_conn=engine_or_conn) as conn:
         try:
@@ -77,7 +81,7 @@ def _get_user_id_from_db(
 def _add_user_to_db(
     name: str, /, *, engine_or_conn: Engine | Connection = ENGINE
 ) -> None:
-    ins = Users.insert().values(name=name)
+    ins = Users.insert().values(id=str(uuid4()), name=name)
     with _yield_conn(engine_or_conn=engine_or_conn) as conn:
         _ = conn.execute(ins)
 
@@ -93,6 +97,7 @@ def get_orders_from_db(
 ) -> list[OrderOut]:
     sel = (
         select(
+            Orders.c.id,
             Orders.c.datetime,
             Users.c.name,
             Orders.c.description,
@@ -110,10 +115,25 @@ def get_orders_from_db(
         rows = conn.execute(sel).all()
     return [
         OrderOut(
-            datetime=datetime, user=user, description=description, price=price
+            id=id_,
+            datetime=datetime,
+            user=user,
+            description=description,
+            price=price,
         )
-        for datetime, user, description, price in rows
+        for id_, datetime, user, description, price in rows
     ]
+
+
+# delete
+
+
+def delete_order_from_db(
+    id_: UUID, /, *, engine_or_conn: Engine | Connection = ENGINE
+) -> None:
+    del_ = Orders.delete().where(Orders.c.id == str(id_))
+    with _yield_conn(engine_or_conn=engine_or_conn) as conn:
+        _ = conn.execute(del_)
 
 
 # utilities
