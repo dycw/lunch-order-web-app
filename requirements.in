@@ -1,5 +1,7 @@
 fastapi >= 0.103.0, < 0.104
-gunicorn >= 21.2.0, < 21.3
+jinja2 >= 3.1.2, < 3.2
+pytailwindcss >= 0.2.0, < 0.3
+uvicorn >= 0.23.2, < 0.24
 
 pip-tools
 pre-commit
