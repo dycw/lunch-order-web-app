@@ -5,18 +5,50 @@
       href="{{ url_for('static', path='/css/main.css') }}"
       rel="stylesheet"
     />
+    <script src="{{ url_for('static', path='js/htmx.min.js') }}"></script>
   </head>
-  <body>
-    <h1 class="text-6xl">Lunch order</h1>
-    <h2 class="text-4xl">
-      Welcome, <span class="font-extrabold">{{ username }}</span>
-    </h2>
-    <p>Today is {{ now }}</p>
-    <h1 class="font-medium leading-tight text-5xl mt-0 mb-2 text-blue-600">
-      Todo app
-    </h1>
-    <h1 class="font-medium leading-tight text-5xl mt-0 mb-2 text-blue-600">
-      Todo app
-    </h1>
+  <body class="bg-gray-100">
+    <div class="container mx-auto px-2 w-full md:w-4/5 xl:w-3/5">
+      <h1 class="my-6 text-6xl">Lunch order system</h1>
+      <h2 class="text-4xl">
+        Welcome, <span class="font-extrabold">{{ username }}</span>
+      </h2>
+      <p>Today is {{ now|fmt_datetime }}</p>
+      <p>{{ orders|length }} order(s)</p>
+
+      <!-- existing orders -->
+      <div
+        class="flex flex-col overflow-x-auto sm:-mx-6 lg:-mx-8 min-w-full py-2 sm:px-6 lg:px-8 overflow-hidden"
+      >
+        <table class="min-w-full text-left text-sm font-light">
+          <thead class="border-b font-medium dark:border-neutral-500">
+            <tr>
+              <th scope="col" class="px-6 py-4">User</th>
+              <th scope="col" class="px-6 py-4">Datetime</th>
+              <th scope="col" class="px-6 py-4">Item</th>
+              <th scope="col" class="px-6 py-4">Price ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+            <tr class="border-b dark:border-neutral-500">
+              <td class="whitespace-nowrap px-6 py-4 font-medium">
+                {{ order.user }}
+              </td>
+              <td class="whitespace-nowrap px-6 py-4">
+                {{ order.date|fmt_datetime}}
+              </td>
+              <td class="whitespace-nowrap px-6 py-4">
+                {{ order.description }}
+              </td>
+              <td class="whitespace-nowrap px-6 py-4">
+                {{ order.price|fmt_price }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </body>
 </html>
