@@ -15,15 +15,25 @@
             <th scope="col">User</th>
             <th scope="col">Item</th>
             <th scope="col">Price ($)</th>
+            <th scope="col">Delete</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody
+          hx-confirm="Are you sure?"
+          hx-target="closest tr"
+          hx-swap="outerHTML swap:1s"
+        >
           {% for order in orders %}
           <tr>
             <td>{{ order.datetime|fmt_datetime}}</td>
             <td>{{ order.user }}</td>
             <td>{{ order.description }}</td>
             <td>{{ order.price|fmt_price }}</td>
+            <td>
+              <button class="btn btn-secondary" hx-delete="/api/{{ order.id }}">
+                Delete
+              </button>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -75,6 +85,20 @@
         </div>
         <button type="submit" class="btn btn-primary">Submit</button>
       </form>
+    </div>
+
+    <div class="w-small w-2/3 mx-auto py-10 text-gray-600">
+      <input
+        type="text"
+        name="search"
+        hx-post="/search"
+        hx-trigger="keyup changed delay:250ms"
+        hx-indicator=".htmx-indicator"
+        hx-target="#todo-results"
+        placeholder="Search"
+        class="bg-white h-10 px-5 pr-10 rounded-full text-2xl focus:outline-none"
+      />
+      <span class="htmx-indicator">Searching...</span>
     </div>
   </div>
 </div>
