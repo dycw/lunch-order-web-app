@@ -22,6 +22,8 @@ fastapi==0.103.0
     # via -r requirements.in
 filelock==3.12.3
     # via virtualenv
+greenlet==3.0.3
+    # via sqlalchemy
 h11==0.14.0
     # via uvicorn
 identify==2.5.27
@@ -50,7 +52,7 @@ pyproject-hooks==1.0.0
     # via build
 pytailwindcss==0.2.0
     # via -r requirements.in
-python-multipart==0.0.6
+python-multipart==0.0.7
     # via -r requirements.in
 pyyaml==6.0.1
     # via pre-commit
